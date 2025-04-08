@@ -1,113 +1,73 @@
-import database, time, os
+import sqlite3
+
+
+CREATE_BEANS_TABLE = "CREATE TABLE IF NOT EXISTS beans (id INTEGER PRIMARY KEY, name TEXT, method TEXT, rating Integer);"
+
+
+INSERT_BEAN = "INSERT INTO beans(name, method, rating) VALUES (?, ?, ?);"
+
+GET_ALL_BEANS = "SELECT * FROM beans;"
+GET_BEANS_BY_NAME = "SELECT * FROM beans WHERE name = ?;"
+#SELECT STAR GETS ALL THE COLUMNS FRM THE TABLE
+GET_BEST_PREPARATION_FOR_BEAN = """
+SELECT * FROM beans
+WHERE name = ?
+ORDER BY rating DESC
+LIMIT 1;"""
+
+DELETE_BEAN_NAME = """
+DELETE FROM beans
+WHERE name = ?
+"""
+
+DELETE_BEAN_ID = """
+DELETE FROM beans
+WHERE id = ?
+"""
+
+SELECT_BEAN_RATING_RANGE = """
+SELECT *
+FROM beans
+WHERE rating >= ? AND ? >= rating"""
 
 
 
-MENU_PROMPT = """-- Coffee Bean App --
+#establishes connection to a SQLite databse named "data.db"
+def connect():
+    return sqlite3.connect("data.db")
 
-Please choose one of these options:
+#Connection is used to execute the SQL query'
+#Creates a table named beans if it doesn't already exist
+#"With connection" ensures that any changes automatically go to the database.
+#If there are any issues, with connection ensures that it would rol back easily
+def create_tables(connection):
+    with connection:
+        connection.execute(CREATE_BEANS_TABLE)
 
-1) Add a new bean.
-2) See all beans.
-3) Find a bean by name.
-4) See which preparation method is best for a bean.
-5) Sort by rating
-6) Delete some beans by id/name
-8) Exit.
+def add_bean(connection, name, method, rating):
+    with connection:
+        return connection.execute(INSERT_BEAN, (name, method, rating))
 
-Your selection:"""
-###########-FUNCTIONS FOR BEANS-############
-def clear_screen():
-    os.system("clear")
+def get_all_beans(connection):
+    with connection:
+        return connection.execute(GET_ALL_BEANS).fetchall()
 
-def pause():
-    input("Press enter to continue: ")
+def get_beans_by_name(connection, name):
+    with connection:
+        connection.execute(GET_BEANS_BY_NAME, (name,)).fetchall()
 
-def prompt_add_beans(connection):
-    name = input("Enter bean name: ")
-    method = input("Enter how you've prepared it: ")
-    rating = int(input("Enter your rating score (0-100): "))
+def get_best_preparation_for_bean(connection, name):
+    with connection:
+        return connection.execute(GET_BEST_PREPARATION_FOR_BEAN, (name,)).fetchone()
 
-    database.add_bean(connection, name, method, rating)
+def delete_bean_by_name(connection, name):
+    with connection:
+        connection.execute(DELETE_BEAN_NAME, (name,))
 
-def see_all_beans(connection):
-    # receives the connection for all beans
-    beans = database.get_all_beans(connection)
+def delete_bean_by_ID(connection, bean_id):
+    with connection:
+        connection.execute(DELETE_BEAN_ID, (bean_id,))
 
-    # for loop to print every bean
-    for bean in beans:
-        print(f"{bean[1]} ({bean[2]}) - {bean[3]}/100")
-
-def find_bean(connection):
-    # find beans based on input
-    name = input("Enter bean name to find: ")
-    beans = database.get_beans_by_name(connection, name)
-    # print beans
-    for bean in beans:
-        print(f"{bean[1]} ({bean[2]}) - {bean[3]}/100")
-
-def find_method(connection):
-    name = input("Enter bean name to find: ")
-    best_method = database.get_best_preparation_for_bean(connection, name)
-
-    print(f"The best preparation method for {name} is {best_method[2]} ")
-
-def wipe_beans():
-    f = open('data.db', 'r+')
-    f.truncate(0)  # need '0' when using r+
-
-def delete_bean_id_name(connection):
-    choice = input("""
-    Would you like to...
-    1) Delete bean by name
-    2) Delete bean by ID 
-    (Please input 1 or 2): """)
-
-    if choice == "1":
-        name = input("What is your beans name?: ")
-        database.delete_bean_by_name(connection, name)
-    elif choice == "2":
-        id = input("What is your beans ID number?: ")
-        database.delete_bean_by_ID(connection, id)
-
-def sort_by_rating(connection):
-    start_range = int(input("Please select the LOWEST rating(ONLY INTEGER VALUES): "))
-    end_range = int(input("Please select the HIGHEST rating(ONLY INTEGER VALUES): "))
-
-    beans = database.find_bean_by_range(connection, start_range, end_range)
-
-    for bean in beans:
-        print(f"{bean[1]} ({bean[2]}) - {bean[3]}/100")
-
-
-#########-MAIN MENU-##########
-def menu():
-    connection = database.connect()
-    database.create_tables(connection)
-# := allows you to assign a value to a variable within an expression
-    while (user_input := input(MENU_PROMPT)) != "8":
-        if user_input == "1":
-            prompt_add_beans(connection)
-            pause()
-        elif user_input == "2":
-            see_all_beans(connection)
-            pause()
-        elif user_input == "3":
-            find_bean(connection)
-            pause()
-        elif user_input == "4":
-            find_method(connection)
-            pause()
-        elif user_input == "5":
-            sort_by_rating(connection)
-            pause()
-        elif user_input == "6":
-            delete_bean_id_name(connection)
-            print("Your bean has been deleted :)")
-            pause()
-        elif user_input == "8":
-            print("Bye!")
-            wipe_beans()
-        else:
-            print("Invalid input")
-
-menu()
+def find_bean_by_range(connection, start_range, end_range):
+    with connection:
+        return connection.execute(SELECT_BEAN_RATING_RANGE, (start_range, end_range)).fetchall()
