@@ -12,7 +12,8 @@ Please choose one of these options:
 4) See which preparation method is best for a bean.
 5) Sort by rating
 6) Delete some beans by id/name
-8) Exit.
+7) Wipe beans 
+8) EXIT
 
 Your selection:"""
 ###########-FUNCTIONS FOR BEANS-############
@@ -52,8 +53,8 @@ def find_method(connection):
     print(f"The best preparation method for {name} is {best_method[2]} ")
 
 def wipe_beans():
-    f = open('data.db', 'r+')
-    f.truncate(0)  # need '0' when using r+
+    open('file.txt', 'w').close()
+
 
 def delete_bean_id_name(connection):
     choice = input("""
@@ -104,7 +105,7 @@ def menu():
             delete_bean_id_name(connection)
             print("Your bean has been deleted :)")
             pause()
-        elif user_input == "8":
+        elif user_input == "7":
             print("Bye!")
             wipe_beans()
         else:
